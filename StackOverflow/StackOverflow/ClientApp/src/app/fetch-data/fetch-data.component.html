@@ -1,0 +1,41 @@
+<h1>Forums</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+<table>
+  <tr>
+    <td>
+      <input name="posts" [(ngModel)]="keywords">
+    </td>
+    <td>
+      <button type="submit"  (click)="Search()">Search</button>
+    </td>
+    </tr>
+</table>
+
+    <p *ngIf="!forecasts"><em>Loading...</em></p>
+
+    <p-table [value]="forums" [paginator]="true" [rows]="10">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Votes</th>
+          <th>Answers</th>
+          <th>UserCreated</th>
+          <th>Reputation</th>
+          <th>Badges</th>
+        </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-car>
+    <tr>
+      <td>{{forums.Title}}</td>
+      <td>{{forums.Description}}</td>
+      <td>{{forums.Votes}}</td>
+      <td>{{forums.Answers}}</td>
+      <td>{{forums.UserCreated}}</td>
+      <td>{{forums.Reputation}}</td>
+      <td>{{forums.Badges}}</td>
+    </tr>
+  </ng-template>
+  </p-table>

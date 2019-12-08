@@ -1,0 +1,102 @@
+Task 1:
+
+Created Angular Application which is PWA supported. (Open the StackOverflow solution in visual studio and run application in IIS Express)
+Created Web API method GetSearchResults() which will give the result posts for the keywords that are searched.
+Search Criteria :
+The search text is split into words. The words are passed into query as combined 2 words for all possible combinations.
+Example:
+Search Text : Integer to decimal
+Combinations : Integer to , to Integer, Integer decimal, decimal Integer, to decimal, decimal to
+
+Finally the results are bind into primeng table which has pagination and 10 records per page.
+
+Query : 
+select Title, LEFT(Body,140) as Description, 
+(select 
+COUNT(V.Id) from Votes V where V.PostId = P.Id
+)as Votes, P.AnswerCount as Answers, U.DisplayName as UserCreated, 
+U.Reputation,
+STUFF((SELECT distinct ', ' + B.Name
+         from Badges B
+         where B.UserId = U.Id
+            FOR XML PATH(''), TYPE
+            ).value('.', 'NVARCHAR(MAX)') 
+        ,1,2,'') as Badges
+from Posts P
+INNER JOIN Users U on U.Id = P.OwnerUserId
+where {0}
+
+Indexs Added : 
+1. Non-Clusterd-Index for Title in Posts
+2. Non-Clusterd-Index for UserId in Badges
+3. Non-Clusterd-Index for PostId in Votes
+4. Non-Clusterd-Index for OwnerUserId in Posts
+
+Task 2:
+/*2. Write an SQL query to find the count of questions and answers in the entire database by
+the Day of the week (e.g. Monday, Tuesday) ordered by the upvote to downvote ratio in
+descending order. The result should contain the Post type (Question or Answer), Day of the
+week (Sunday, Monday etc.), Total Posts, Total Upvotes, Total Downvotes and Upvotes to
+Downvotes ratio.*/
+
+select PT.Type, 
+DATENAME(dw,P.CreationDate) as [Day Of week], 
+SUM(U.UpVotes) As TotalUpVotes, 
+SUM(U.DownVotes) AS TotalDownVotes,
+SUM(U.UpVotes)/SUM(U.DownVotes) as Ratio
+from 
+Posts P
+INNER JOIN PostTypes PT on PT.Id = P.PostTypeId
+INNER JOIN Users U on U.Id = P.OwnerUserId
+GROUP BY PT.Type, 
+DATENAME(dw,P.CreationDate)
+Order by SUM(U.UpVotes)/SUM(U.DownVotes) desc
+
+Task 3:
+/*3. Write an SQL query to calculate and list the aggregate weekly data as follows for all the
+weeks in the database in the reverse chronological order. The list should contain the first
+date of the week, Count of questions, Count of answers, Count of accepted answers, Count
+of votes, Total number of new users and active users in that given week.*/
+Select  
+[Day Of week],
+SUM(Question) AS TotalQuestions,
+SUM(Answer) as TotalAnswers,
+SUM(Votes) AS Votes,
+SUM(NewUsers) AS NewUsers,
+SUM(ActiveUsers) AS ActiveUsers
+from
+(
+SELECT *
+from
+(
+select  PT.Type, 
+FORMAT(DATEADD(DAY, 1-DATEPART(WEEKDAY, P.CreationDate), P.CreationDate),'MM/dd/yyyy') as [Day Of week], 
+COUNT(P.Id) As TotalCounts,
+COUNT(P.AcceptedAnswerId) As AcceptedAnswer,
+(select 
+COUNT(V.Id) from Votes V where V.PostId = P.Id
+)as Votes,
+(select 
+COUNT(U.Id) from Users U where DATEADD(DAY, 1-DATEPART(WEEKDAY, P.CreationDate), P.CreationDate) =
+DATEADD(DAY, 1-DATEPART(WEEKDAY, U.CreationDate), U.CreationDate)
+)as NewUsers,
+(select 
+COUNT(U.Id) from Users U where U.Id = P.OwnerUserId
+)as ActiveUsers
+from 
+Posts P
+INNER JOIN PostTypes PT on PT.Id = P.PostTypeId
+GROUP BY P.Id,P.OwnerUserId,PT.Type,
+DATEADD(DAY, 1-DATEPART(WEEKDAY, P.CreationDate), P.CreationDate)
+) A 
+PIVOT
+(
+SUM(TotalCounts)
+FOR [Type] in 
+(
+[Question],[Answer]
+)
+) as Pivot_table
+) B
+group by [Day Of week]
+
